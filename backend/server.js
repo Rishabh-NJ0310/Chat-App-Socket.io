@@ -1,31 +1,35 @@
-import express from 'express';
-import authRoutes from './src/routes/authRoutes.js'
-import connection  from './src/database/Connection.js';
-import messageRoutes from './src/routes/messageRoutes.js';
-import userRoutes from './src/routes/userRoutes.js';
-import cookieParser from 'cookie-parser';
+import path from "path";
+import express from "express";
+import dotenv from "dotenv";
+import cookieParser from "cookie-parser";
 
-const app = express();
-const Port = process.env.PORT || 5000;
+import authRoutes from "./routes/auth.routes.js";
+import messageRoutes from "./routes/message.routes.js";
+import userRoutes from "./routes/user.routes.js";
 
-//root route
-app.get('/', (req,res)=>{
-    res.send('server is ready');
-})
+import connectToMongoDB from "./db/connectToMongoDB.js";
+import { app, server } from "./socket/socket.js";
 
-app.use(express.json());
+const PORT = process.env.PORT || 5000;
+
+const __dirname = path.resolve();
+
+dotenv.config();
+
+app.use(express.json()); // to parse the incoming requests with JSON payloads (from req.body)
 app.use(cookieParser());
 
-// auth routes
 app.use("/api/auth", authRoutes);
-
-//message route
 app.use("/api/messages", messageRoutes);
-
-//User routes
 app.use("/api/users", userRoutes);
 
-app.listen(Port, () => {
-    connection();
-    console.log(`Server is running on http://localhost:${Port}`);
-})
+app.use(express.static(path.join(__dirname, "/frontend/dist")));
+
+app.get("*", (req, res) => {
+	res.sendFile(path.join(__dirname, "frontend", "dist", "index.html"));
+});
+
+server.listen(PORT, () => {
+	connectToMongoDB();
+	console.log(`Server Running on port ${PORT}`);
+});
